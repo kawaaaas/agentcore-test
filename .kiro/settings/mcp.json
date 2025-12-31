@@ -5,16 +5,6 @@
       "disabled": false,
       "autoApprove": ["aws___search_documentation", "aws___read_documentation"]
     },
-    "iam-policy-autopilot": {
-      "command": "uvx",
-      "args": ["iam-policy-autopilot", "mcp-server"],
-      "env": {
-        "AWS_PROFILE": "your-profile-name",
-        "AWS_REGION": "us-east-1"
-      },
-      "disabled": false,
-      "autoApprove": ["generate_application_policies"]
-    },
     "awslabs.aws-diagram-mcp-server": {
       "command": "uvx",
       "args": ["awslabs.aws-diagram-mcp-server"],
@@ -22,7 +12,7 @@
         "FASTMCP_LOG_LEVEL": "ERROR"
       },
       "autoApprove": [],
-      "disabled": false
+      "disabled": true
     }
   },
   "powers": {
