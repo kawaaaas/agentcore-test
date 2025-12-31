@@ -1,0 +1,19 @@
+#!/usr/bin/env node
+import * as cdk from 'aws-cdk-lib/core';
+import { MainStack } from '../lib/stacks/main-stack';
+
+const app = new cdk.App();
+
+// 環境設定
+// CDK_DEFAULT_ACCOUNT と CDK_DEFAULT_REGION は cdk deploy 時に自動的に設定される
+// または明示的に AWS_ACCOUNT_ID と AWS_REGION 環境変数で指定可能
+// Requirements: 1.4
+const env: cdk.Environment = {
+  account: process.env.CDK_DEFAULT_ACCOUNT || process.env.AWS_ACCOUNT_ID,
+  region: process.env.CDK_DEFAULT_REGION || process.env.AWS_REGION,
+};
+
+new MainStack(app, 'MainStack', {
+  env,
+  description: '議事録・タスク管理自動化 AI エージェント インフラ基盤',
+});
