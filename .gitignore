@@ -6,3 +6,10 @@ node_modules
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+
+# TypeScript build info
+tsconfig.tsbuildinfo
+
+# Python cache
+__pycache__/
+*.pyc
