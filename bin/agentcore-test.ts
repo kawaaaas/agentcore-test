@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import * as cdk from 'aws-cdk-lib/core';
-import { MainStack } from '../lib/stacks/main-stack';
+import * as cdk from "aws-cdk-lib/core";
+import { MainStack } from "../lib/stacks/main-stack";
 
 const app = new cdk.App();
 
@@ -13,7 +13,14 @@ const env: cdk.Environment = {
   region: process.env.CDK_DEFAULT_REGION || process.env.AWS_REGION,
 };
 
-new MainStack(app, 'MainStack', {
+// エージェントコードの S3 設定
+// 環境変数で指定するか、デフォルト値を使用
+const agentCodeBucket = process.env.AGENT_CODE_BUCKET || "meeting-agent-code";
+const agentCodePrefix = process.env.AGENT_CODE_PREFIX || "agents/";
+
+new MainStack(app, "MainStack", {
   env,
-  description: '議事録・タスク管理自動化 AI エージェント インフラ基盤',
+  description: "議事録・タスク管理自動化 AI エージェント インフラ基盤",
+  agentCodeBucket,
+  agentCodePrefix,
 });
