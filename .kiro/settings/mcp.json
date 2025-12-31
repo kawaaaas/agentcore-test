@@ -1,0 +1,53 @@
+{
+  "mcpServers": {
+    "aws-knowledge-mcp-server": {
+      "url": "https://knowledge-mcp.global.api.aws",
+      "disabled": false,
+      "autoApprove": ["aws___search_documentation", "aws___read_documentation"]
+    },
+    "iam-policy-autopilot": {
+      "command": "uvx",
+      "args": ["iam-policy-autopilot", "mcp-server"],
+      "env": {
+        "AWS_PROFILE": "your-profile-name",
+        "AWS_REGION": "us-east-1"
+      },
+      "disabled": false,
+      "autoApprove": ["generate_application_policies"]
+    },
+    "awslabs.aws-diagram-mcp-server": {
+      "command": "uvx",
+      "args": ["awslabs.aws-diagram-mcp-server"],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      },
+      "autoApprove": [],
+      "disabled": false
+    }
+  },
+  "powers": {
+    "mcpServers": {
+      "power-aws-infrastructure-as-code-awslabs.aws-iac-mcp-server": {
+        "command": "uvx",
+        "args": ["awslabs.aws-iac-mcp-server@latest"],
+        "env": {
+          "AWS_PROFILE": "your-named-profile",
+          "FASTMCP_LOG_LEVEL": "ERROR"
+        },
+        "disabled": false
+      },
+      "power-github-management-github": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-github"],
+        "env": {
+          "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+        }
+      },
+      "power-aws-agentcore-agentcore-mcp-server": {
+        "command": "uvx",
+        "args": ["awslabs.amazon-bedrock-agentcore-mcp-server@latest"],
+        "disabled": false
+      }
+    }
+  }
+}
