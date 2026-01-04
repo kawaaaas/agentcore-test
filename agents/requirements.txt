@@ -1,9 +1,17 @@
 # AWS AgentCore Runtime
 bedrock-agentcore
 
+# AWS SDK for DynamoDB
+boto3>=1.26.0
+
 # Strands Agents SDK
 strands-agents
 strands-agents-tools
 
 # Pydantic for schema validation
 pydantic>=2.0.0
+
+# Testing frameworks
+hypothesis>=6.0.0
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
