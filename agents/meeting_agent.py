@@ -19,7 +19,7 @@ from bedrock_agentcore.memory import MemoryClient, MemorySessionManager
 
 # ツールのインポート
 from agents.tools.generator import generate_minutes
-from agents.tools.extract_tasks import extract_tasks
+from agents.tools.extract_tasks import extract_tasks_from_minutes
 from agents.tools.validate import validate_transcript
 from agents.tools.formatter import MinutesFormatter
 from agents.tools.slack_notifier import send_slack_approval_message
@@ -63,7 +63,7 @@ SYSTEM_PROMPT = """あなたは議事録生成とタスク抽出を専門とす�
 ## 利用可能なツール
 - validate_transcript: 書き起こしテキストの検証
 - generate_minutes: 議事録の生成
-- extract_tasks: タスクの抽出
+- extract_tasks_from_minutes: タスクの抽出
 - send_slack_approval_message: Slack への承認メッセージ送信
 """
 
@@ -231,7 +231,7 @@ def create_agent() -> Agent:
     ツールを登録:
     - validate_transcript: 書き起こしテキストの検証
     - generate_minutes: 議事録の生成
-    - extract_tasks: タスクの抽出
+    - extract_tasks_from_minutes: タスクの抽出
     - send_slack_approval_message: Slack 承認メッセージの送信
     
     Returns:
@@ -244,13 +244,13 @@ def create_agent() -> Agent:
         system_prompt=SYSTEM_PROMPT,
         tools=[
             generate_minutes,
-            extract_tasks,
+            extract_tasks_from_minutes,
             send_slack_approval_message,
         ],
     )
     
     logger.info(f"Meeting Agent を初期化しました (model={MODEL_ID}, region={AWS_REGION})")
-    logger.info(f"登録ツール: generate_minutes, extract_tasks, send_slack_approval_message")
+    logger.info(f"登録ツール: generate_minutes, extract_tasks_from_minutes, send_slack_approval_message")
     return agent
 
 
