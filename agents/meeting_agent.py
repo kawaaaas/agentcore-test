@@ -22,6 +22,7 @@ from agents.tools.generator import generate_minutes
 from agents.tools.extract_tasks import extract_tasks
 from agents.tools.validate import validate_transcript
 from agents.tools.formatter import MinutesFormatter
+from agents.tools.slack_notifier import send_slack_approval_message
 from agents.models.minutes import Minutes, MinutesMetadata
 
 # ロギング設定
@@ -40,6 +41,7 @@ SYSTEM_PROMPT = """あなたは議事録生成とタスク抽出を専門とす�
 - 議事録からアクションアイテム（タスク）を抽出する
 - ユーザーの修正指示に基づいて内容を改善する
 - 過去の修正パターンを学習し、同様の改善を自動的に適用する
+- 生成した議事録やタスクを Slack で承認依頼する
 
 ## 出力形式
 議事録は以下の構造化された形式で生成してください：
@@ -62,6 +64,7 @@ SYSTEM_PROMPT = """あなたは議事録生成とタスク抽出を専門とす�
 - validate_transcript: 書き起こしテキストの検証
 - generate_minutes: 議事録の生成
 - extract_tasks: タスクの抽出
+- send_slack_approval_message: Slack への承認メッセージ送信
 """
 
 # Nova 2 Lite モデル設定
@@ -229,6 +232,7 @@ def create_agent() -> Agent:
     - validate_transcript: 書き起こしテキストの検証
     - generate_minutes: 議事録の生成
     - extract_tasks: タスクの抽出
+    - send_slack_approval_message: Slack 承認メッセージの送信
     
     Returns:
         Agent: 設定済みの Strands Agent インスタンス
@@ -241,11 +245,12 @@ def create_agent() -> Agent:
         tools=[
             generate_minutes,
             extract_tasks,
+            send_slack_approval_message,
         ],
     )
     
     logger.info(f"Meeting Agent を初期化しました (model={MODEL_ID}, region={AWS_REGION})")
-    logger.info(f"登録ツール: generate_minutes, extract_tasks")
+    logger.info(f"登録ツール: generate_minutes, extract_tasks, send_slack_approval_message")
     return agent
 
 

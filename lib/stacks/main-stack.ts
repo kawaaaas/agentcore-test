@@ -5,6 +5,7 @@ import { AgentGatewayConstruct } from "../constructs/agent/agent-gateway-constru
 import { AgentIdentityConstruct } from "../constructs/agent/agent-identity-construct";
 import { AgentMemoryConstruct } from "../constructs/agent/agent-memory-construct";
 import { AgentRuntimeConstruct } from "../constructs/agent/agent-runtime-construct";
+import { SlackConstruct } from "../constructs/notification/slack-construct";
 import { StorageConstruct } from "../constructs/storage-construct";
 
 /**
@@ -56,6 +57,11 @@ export class MainStack extends cdk.Stack {
    * AgentCore Runtime を管理する Construct
    */
   public readonly agentRuntime: AgentRuntimeConstruct;
+
+  /**
+   * Slack 連携を管理する Construct
+   */
+  public readonly slack: SlackConstruct;
 
   constructor(scope: Construct, id: string, props: MainStackProps) {
     super(scope, id, props);
@@ -120,6 +126,15 @@ export class MainStack extends cdk.Stack {
       description: "議事録生成エージェント用の Gateway（MCP 統合）",
     });
 
+    // Slack Construct をインスタンス化（Runtime より先に作成）
+    // Requirements: 9.1, 9.2, 9.3, 9.4, 9.5
+    // Note: agentRuntimeFunctionName は後で更新する必要があるため、
+    // 一時的なプレースホルダーを使用
+    this.slack = new SlackConstruct(this, "Slack", {
+      agentRuntimeFunctionName: "placeholder",
+      prefix: this.stackName,
+    });
+
     // AgentRuntimeConstruct をインスタンス化
     // Requirements: 1.1, 1.2, 1.3, 1.4, 6.1
     this.agentRuntime = new AgentRuntimeConstruct(this, "AgentRuntime", {
@@ -147,6 +162,8 @@ export class MainStack extends cdk.Stack {
         TRANSCRIPT_BUCKET: this.storage.transcriptBucket.bucketName,
         MINUTES_BUCKET: this.storage.minutesBucket.bucketName,
         SESSION_TABLE: this.storage.sessionTable.tableName,
+        SLACK_MESSAGE_TABLE: this.slack.messageTable.tableName,
+        SLACK_SIGNING_SECRET_ARN: this.slack.signingSecret.secretArn,
       },
     });
 
@@ -163,6 +180,12 @@ export class MainStack extends cdk.Stack {
 
     // DynamoDB テーブルへの読み書き権限を Runtime ロールに付与
     this.storage.sessionTable.grantReadWriteData(this.agentRuntime.role);
+
+    // Slack メッセージテーブルへの読み書き権限を Runtime ロールに付与
+    this.slack.messageTable.grantReadWriteData(this.agentRuntime.role);
+
+    // Secrets Manager からの読み取り権限を Runtime ロールに付与
+    this.slack.signingSecret.grantRead(this.agentRuntime.role);
 
     // 出力値を追加
     // Requirements: 6.1, 6.2
@@ -188,6 +211,18 @@ export class MainStack extends cdk.Stack {
       value: this.agentIdentity.workloadIdentityArn,
       description: "AgentCore WorkloadIdentity ARN",
       exportName: `${this.stackName}-IdentityArn`,
+    });
+
+    new cdk.CfnOutput(this, "SlackWebhookUrl", {
+      value: this.slack.webhookUrl,
+      description: "Slack Webhook URL",
+      exportName: `${this.stackName}-SlackWebhookUrl`,
+    });
+
+    new cdk.CfnOutput(this, "SlackMessageTableName", {
+      value: this.slack.messageTable.tableName,
+      description: "Slack Message Table Name",
+      exportName: `${this.stackName}-SlackMessageTableName`,
     });
   }
 }
