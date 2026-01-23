@@ -10,6 +10,12 @@ from agents.models.approval import (
     PendingMinutesRecord,
     PendingMinutesBlob,
 )
+from agents.models.github_models import (
+    Priority,
+    Task,
+    IssueRequest,
+    IssueResult,
+)
 
 __all__ = [
     "ActionItem",
@@ -18,4 +24,8 @@ __all__ = [
     "ApprovalStatus",
     "PendingMinutesRecord",
     "PendingMinutesBlob",
+    "Priority",
+    "Task",
+    "IssueRequest",
+    "IssueResult",
 ]

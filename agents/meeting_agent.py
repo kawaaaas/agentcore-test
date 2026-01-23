@@ -23,6 +23,11 @@ from agents.tools.extract_tasks import extract_tasks_from_minutes
 from agents.tools.validate import validate_transcript
 from agents.tools.formatter import MinutesFormatter
 from agents.tools.slack_notifier import send_slack_approval_message
+from agents.tools.github_tools import (
+    create_github_issue,
+    create_github_issues_batch,
+    check_duplicate_issue,
+)
 from agents.models.minutes import Minutes, MinutesMetadata
 
 # ロギング設定
@@ -42,6 +47,7 @@ SYSTEM_PROMPT = """あなたは議事録生成とタスク抽出を専門とす�
 - ユーザーの修正指示に基づいて内容を改善する
 - 過去の修正パターンを学習し、同様の改善を自動的に適用する
 - 生成した議事録やタスクを Slack で承認依頼する
+- 承認されたタスクを GitHub Issues に自動登録する
 
 ## 出力形式
 議事録は以下の構造化された形式で生成してください：
@@ -60,11 +66,23 @@ SYSTEM_PROMPT = """あなたは議事録生成とタスク抽出を専門とす�
 - 参加者情報が不明な場合は空のリストを返す（Requirements 2.5）
 - 不明確な点は確認を求める
 
+## GitHub Issue 登録フロー
+タスク承認後の Issue 登録フローは以下の通りです：
+1. タスクが承認されたら、重複チェックを実行する（check_duplicate_issue）
+2. 重複が検出された場合は、Slack で警告を表示し、ユーザーに確認を求める
+3. 重複がない、またはユーザーが登録を承認した場合、Issue を作成する
+4. 単一タスクの場合は create_github_issue を使用
+5. 複数タスクの場合は create_github_issues_batch を使用
+6. 登録完了後、Issue URL を含む完了メッセージを Slack に送信する
+
 ## 利用可能なツール
 - validate_transcript: 書き起こしテキストの検証
 - generate_minutes: 議事録の生成
 - extract_tasks_from_minutes: タスクの抽出
 - send_slack_approval_message: Slack への承認メッセージ送信
+- check_duplicate_issue: GitHub Issue の重複チェック
+- create_github_issue: 単一 GitHub Issue の作成
+- create_github_issues_batch: 複数 GitHub Issue の一括作成
 """
 
 # Nova 2 Lite モデル設定
@@ -226,13 +244,16 @@ def create_agent() -> Agent:
     """
     Meeting Agent を作成する。
     
-    Requirements: 2.1
+    Requirements: 2.1, 6.1, 6.3, 6.4
     
     ツールを登録:
     - validate_transcript: 書き起こしテキストの検証
     - generate_minutes: 議事録の生成
     - extract_tasks_from_minutes: タスクの抽出
     - send_slack_approval_message: Slack 承認メッセージの送信
+    - check_duplicate_issue: GitHub Issue の重複チェック
+    - create_github_issue: 単一 GitHub Issue の作成
+    - create_github_issues_batch: 複数 GitHub Issue の一括作成
     
     Returns:
         Agent: 設定済みの Strands Agent インスタンス
@@ -246,11 +267,18 @@ def create_agent() -> Agent:
             generate_minutes,
             extract_tasks_from_minutes,
             send_slack_approval_message,
+            check_duplicate_issue,
+            create_github_issue,
+            create_github_issues_batch,
         ],
     )
     
     logger.info(f"Meeting Agent を初期化しました (model={MODEL_ID}, region={AWS_REGION})")
-    logger.info(f"登録ツール: generate_minutes, extract_tasks_from_minutes, send_slack_approval_message")
+    logger.info(
+        f"登録ツール: generate_minutes, extract_tasks_from_minutes, "
+        f"send_slack_approval_message, check_duplicate_issue, "
+        f"create_github_issue, create_github_issues_batch"
+    )
     return agent
 
 

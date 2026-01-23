@@ -2,12 +2,18 @@
 重複タスク検出
 
 タスクリスト内の重複タスクを検出し、統合する。
-Requirements: 6.1, 6.2, 6.3, 6.4
+また、GitHub Issueの重複検出機能も提供する。
+Requirements: 6.1, 6.2, 6.3, 6.4 (タスク抽出)
+Requirements: 10.1, 10.2, 10.3 (GitHub連携)
 """
 
-from typing import List, Tuple
+import logging
+from difflib import SequenceMatcher
+from typing import List, Optional, Tuple
 
 from agents.tools.task_models import Task
+
+logger = logging.getLogger(__name__)
 
 
 class DuplicateDetector:
@@ -238,3 +244,170 @@ class DuplicateDetector:
         merged.source_quote = "\n---\n".join(quotes)
         
         return merged
+
+
+# GitHub Issue重複検出用のクラス
+
+
+class Issue:
+    """
+    GitHub Issue情報
+    
+    重複検出に必要なIssue情報を表現する。
+    """
+    
+    def __init__(
+        self,
+        number: int,
+        title: str,
+        url: str,
+        state: str = "open",
+    ):
+        """
+        Issueを初期化
+        
+        Args:
+            number: Issue番号
+            title: Issueタイトル
+            url: Issue URL
+            state: Issueの状態（open/closed）
+        """
+        self.number = number
+        self.title = title
+        self.url = url
+        self.state = state
+
+
+class Duplicate_Detector:
+    """
+    重複Issue検出
+    
+    タイトルの類似度に基づいて、既存のIssueとの重複を検出する機能を提供する。
+    Levenshtein距離ベースの類似度計算を使用する。
+    Requirements: 10.1, 10.2, 10.3
+    """
+    
+    # 重複判定の閾値（80%以上で重複とみなす）
+    DUPLICATE_THRESHOLD = 0.8
+    
+    @staticmethod
+    def calculate_similarity(title1: str, title2: str) -> float:
+        """
+        タイトル類似度の計算
+        
+        2つのタイトル文字列の類似度を計算する。
+        SequenceMatcher（Levenshtein距離ベース）を使用して、
+        0.0〜1.0の範囲で類似度を返す。
+        
+        Args:
+            title1: 比較対象のタイトル1
+            title2: 比較対象のタイトル2
+            
+        Returns:
+            類似度（0.0〜1.0）
+            - 0.0: 完全に異なる
+            - 1.0: 完全に同一
+            
+        Requirements: 10.2
+        """
+        # 空文字列の処理
+        if not title1 and not title2:
+            return 1.0
+        if not title1 or not title2:
+            return 0.0
+        
+        # 正規化（小文字化、前後の空白削除）
+        normalized_title1 = title1.strip().lower()
+        normalized_title2 = title2.strip().lower()
+        
+        # SequenceMatcherで類似度を計算
+        matcher = SequenceMatcher(None, normalized_title1, normalized_title2)
+        similarity = matcher.ratio()
+        
+        logger.debug(
+            f"類似度計算: title1='{title1}', title2='{title2}', similarity={similarity:.2f}"
+        )
+        
+        return similarity
+    
+    def find_duplicates(
+        self,
+        title: str,
+        existing_issues: list[Issue],
+        threshold: Optional[float] = None,
+    ) -> list[Issue]:
+        """
+        重複Issueの検索
+        
+        指定されたタイトルと既存のIssueリストを比較し、
+        類似度が閾値以上のIssueを重複として返す。
+        
+        Args:
+            title: 検索対象のタイトル
+            existing_issues: 既存のIssueリスト
+            threshold: 重複判定の閾値（オプション、デフォルト: 0.8）
+            
+        Returns:
+            重複と判定されたIssueのリスト（類似度の高い順）
+            
+        Requirements: 10.1, 10.2, 10.3
+        """
+        # 閾値のデフォルト値
+        if threshold is None:
+            threshold = self.DUPLICATE_THRESHOLD
+        
+        logger.info(
+            f"重複Issue検索開始: title='{title}', "
+            f"existing_issues_count={len(existing_issues)}, "
+            f"threshold={threshold}"
+        )
+        
+        # 類似度を計算して重複を検出
+        duplicates = []
+        for issue in existing_issues:
+            similarity = self.calculate_similarity(title, issue.title)
+            
+            # 閾値以上の場合は重複とみなす
+            if similarity >= threshold:
+                duplicates.append((issue, similarity))
+                logger.info(
+                    f"重複Issue検出: "
+                    f"issue_number={issue.number}, "
+                    f"issue_title='{issue.title}', "
+                    f"similarity={similarity:.2f}"
+                )
+        
+        # 類似度の高い順にソート
+        duplicates.sort(key=lambda x: x[1], reverse=True)
+        
+        # Issueのみを返す（類似度は含めない）
+        result = [issue for issue, _ in duplicates]
+        
+        logger.info(f"重複Issue検索完了: duplicates_count={len(result)}")
+        
+        return result
+    
+    def is_duplicate(
+        self,
+        title: str,
+        existing_issues: list[Issue],
+        threshold: Optional[float] = None,
+    ) -> bool:
+        """
+        重複判定
+        
+        指定されたタイトルが既存のIssueと重複しているかを判定する。
+        類似度が80%以上の場合に重複とみなす。
+        
+        Args:
+            title: 検索対象のタイトル
+            existing_issues: 既存のIssueリスト
+            threshold: 重複判定の閾値（オプション、デフォルト: 0.8）
+            
+        Returns:
+            重複している場合はTrue、そうでない場合はFalse
+            
+        Requirements: 10.1, 10.2, 10.3
+        """
+        duplicates = self.find_duplicates(title, existing_issues, threshold)
+        return len(duplicates) > 0

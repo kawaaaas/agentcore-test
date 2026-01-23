@@ -1,8 +1,18 @@
 #!/usr/bin/env node
 import * as cdk from "aws-cdk-lib/core";
 import { MainStack } from "../lib/stacks/main-stack";
+import { TestStack } from "../lib/stacks/s3";
+
+
 
 const app = new cdk.App();
+
+const stg = new TestStack(app, "StgStack")
+const prod = new TestStack(app, "ProdStack")
+
+cdk.Tags.of(stg).add('Environment', 'Staging');
+cdk.Tags.of(prod).add('Environment', 'Production');
+
 
 // 環境設定
 // CDK_DEFAULT_ACCOUNT と CDK_DEFAULT_REGION は cdk deploy 時に自動的に設定される
@@ -24,3 +34,5 @@ new MainStack(app, "MainStack", {
   agentCodeBucket,
   agentCodePrefix,
 });
+
+
