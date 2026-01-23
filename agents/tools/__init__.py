@@ -10,6 +10,11 @@ from agents.tools.validate import validate_transcript, ValidationError
 from agents.tools.task_models import Priority, Task, TaskList, TaskListStatus
 from agents.tools.task_validator import Task_Validator, TaskValidationError
 from agents.tools.task_persistence import Task_Persistence
+from agents.tools.github_tools import (
+    create_github_issue,
+    create_github_issues_batch,
+    check_duplicate_issue,
+)
 
 __all__ = [
     "summarize_meeting",
@@ -24,4 +29,7 @@ __all__ = [
     "Task_Validator",
     "TaskValidationError",
     "Task_Persistence",
+    "create_github_issue",
+    "create_github_issues_batch",
+    "check_duplicate_issue",
 ]
